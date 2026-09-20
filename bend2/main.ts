@@ -317,7 +317,8 @@ async function cli_checkup(file: string): Promise<void> {
     cli_say(1, "--- " + m[1] + " ---\n");
     let code = 1;
     try {
-      const own = /^import Base$/m.test(fs.readFileSync(at, "utf8"));
+      const own = /^import Base$/m.test(fs.readFileSync(at, "utf8")
+        .replace(/\r\n/g, "\n"));
       code = book_run(...await book_read(at, own ? base : undefined), []);
     } catch (e) {
       cli_say(2, book_err(e) + "\n");
@@ -402,15 +403,27 @@ function cli_build(bin: string, file: string): void {
   const cc    = cc_find(bangs);
   const objc  = mac && (bangs || /^#import /m.test(c))
     ? ["-x", "objective-c", "-fobjc-arc", "-fmodules"] : [];
+  // An effect's X11 or ALSA include sits behind a __linux__ arm, so only
+  // Linux links them: elsewhere the text is there but the include is not.
   const libs  = [["X11", "X11"], ["alsa", "asound"]].flatMap(([h, l]) =>
-    !mac && c.includes("#include <" + h + "/") ? ["-l" + l] : []);
-  const cpu = [...objc, "-std=c11", "-O3", file, "-lpthread", "-lm",
-    ...libs, "-o", path.resolve(bin)];
+    process.platform === "linux" && c.includes("#include <" + h + "/")
+      ? ["-l" + l] : []);
+  // Windows carries its threads and its math in the CRT, and its sockets
+  // in Winsock.
+  const sys = process.platform === "win32"
+    ? ["-lws2_32", "-lbcrypt", "-D_CRT_SECURE_NO_WARNINGS"]
+    : ["-lpthread", "-lm"];
+  // Windows runs a program by its .exe name, so a binary asked for under
+  // a bare name takes one.
+  const exe = process.platform === "win32" && path.extname(bin) === ""
+    ? bin + ".exe" : bin;
+  const cpu = [...objc, "-std=c11", "-O3", file, ...sys,
+    ...libs, "-o", path.resolve(exe)];
   const gpu = mac ? ["-DBEND_METAL=1", ...cpu]
     : ["-DBEND_CUDA=1", "-I" + cuda + "/include", "-L" + cuda + "/lib64",
       "-L" + cuda + "/lib", ...cpu, "-lcuda", "-lnvrtc"];
   const steps: [string, string[]][] = bangs
-    ? [[cc, gpu], [path.resolve(bin), ["--gpu-build"]]] : [[cc, cpu]];
+    ? [[cc, gpu], [path.resolve(exe), ["--gpu-build"]]] : [[cc, cpu]];
   for (const [cmd, args] of steps) {
     if (child.spawnSync(cmd, args, { stdio: "inherit" }).status !== 0) {
       throw "Error: " + path.basename(cmd) + " failed to build " + bin;

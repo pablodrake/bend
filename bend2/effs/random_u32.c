@@ -5,12 +5,21 @@
 #include <sys/random.h>
 #endif
 
+#ifdef _WIN32
+#include <bcrypt.h>
+#endif
+
 // One word from the host's entropy source: getrandom never returns short
 // for a request this small once the pool is ready.
 static void io_random_u32_call(IoWork* w) {
 #ifdef __APPLE__
   arc4random_buf(&w->word, sizeof(w->word));
   w->code = 0;
+#elif defined(_WIN32)
+  // BCryptGenRandom with the system preference needs no algorithm handle,
+  // and answers a status, not errno.
+  w->code = BCryptGenRandom(NULL, (PUCHAR)&w->word, (ULONG)sizeof(w->word),
+    BCRYPT_USE_SYSTEM_PREFERRED_RNG) == 0 ? 0 : EIO;
 #else
   io_sys_end(w, getrandom(&w->word, sizeof(w->word), 0));
 #endif
