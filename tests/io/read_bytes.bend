@@ -6,10 +6,12 @@
 import Base
 
 law path:
-  String
+  IO(String)
 
 def path():
-  "/tmp/bend_io_read_bytes"
+  do IO<String>:
+    dir : String <- IO.temp_dir()
+    IO.pure(String, dir ++ "/bend_io_read_bytes")
 
 law bytes_line:
   for xs: List<&2, U32>
@@ -51,7 +53,8 @@ law read_max:
 
 def read_max(max):
   do IO<Unit>:
-    g : File <- IO.try(File, File.open(path(), "r"))
+    p : String <- path()
+    g : File <- IO.try(File, File.open(p, "r"))
     m : File & Result<&1, &1, (U32 & String), List<&2, U32>> <-
       File.read_bytes(g, max)
     read_go(m)
@@ -61,7 +64,8 @@ law main:
 
 def main():
   do IO<U32>:
-    f : File <- IO.try(File, File.open(path(), "w"))
+    p : String <- path()
+    f : File <- IO.try(File, File.open(p, "w"))
     w : File & Result<&1, &1, (U32 & String), Unit> <- File.write(f, "Olá\n")
     x : Unit <- write_go(w)
     y : Unit <- read_max(64)

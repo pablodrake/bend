@@ -6,6 +6,11 @@ import Base
 type Log is Type:
   Log{file: File, n: U32}
 
+def path() -> IO(String):
+  do IO<String>:
+    dir : String <- IO.temp_dir()
+    IO.pure(String, dir ++ "/bend_gfx_linear.tmp")
+
 def Log.view(s: Log) -> Log & Image:
   Log{file, +n} = s
   (Log{file, n}, Pix{n})
@@ -40,13 +45,15 @@ def closed(m: Maybe<Log>) -> IO(Unit):
       do IO<Unit>:
         u : Unit <- IO.print("frames " ++ U32.show(n))
         v : Unit <- File.close(file)
-        g : File <- IO.try(File, File.open("/tmp/bend_gfx_linear.tmp", "r"))
+        q : String <- path()
+        g : File <- IO.try(File, File.open(q, "r"))
         m : File & Result<&1, &1, U32 & String, String> <- File.read(g, 64)
         read_go(m)
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    f : File <- IO.try(File, File.open("/tmp/bend_gfx_linear.tmp", "w"))
+    p : String <- path()
+    f : File <- IO.try(File, File.open(p, "w"))
     m : Maybe<Log> <- App.play(~Log, ~App{Log.view, Log.tick}, [[], [Close{}], []],
       Log{f, 0})
     closed(m)

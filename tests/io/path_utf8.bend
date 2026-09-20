@@ -9,10 +9,11 @@
 import Base
 
 law good:
+  for dir: String
   String
 
-def good():
-  String.append("/tmp/bend_io_path_", SCon{Chr{233}, SNil{}})
+def good(dir):
+  String.append(dir ++ "/bend_io_path_", SCon{Chr{233}, SNil{}})
 
 law write_go:
   for w: File & Result<&1, &1, (U32 & String), Unit>
@@ -41,10 +42,11 @@ law main:
 
 def main():
   do IO<U32>:
-    f : File <- IO.try(File, File.open(good(), "w"))
+    +dir : String <- IO.temp_dir()
+    f : File <- IO.try(File, File.open(good(dir), "w"))
     w : File & Result<&1, &1, (U32 & String), Unit> <- File.write(f, "Olá 日本 🙂")
     x : Unit <- write_go(w)
-    g : File <- IO.try(File, File.open(good(), "r"))
+    g : File <- IO.try(File, File.open(good(dir), "r"))
     m : File & Result<&1, &1, (U32 & String), String> <- File.read(g, 64)
     read_go(m)
 

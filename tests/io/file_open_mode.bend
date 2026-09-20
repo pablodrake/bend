@@ -24,7 +24,9 @@ law probe:
 
 def probe(mode):
   do IO<Unit>:
-    r : Result<&1, &1, (U32 & String), File> <- File.open("/tmp/bend_io_mode.txt", mode)
+    dir : String <- IO.temp_dir()
+    r : Result<&1, &1, (U32 & String), File> <-
+      File.open(dir ++ "/bend_io_mode.txt", mode)
     answer(r)
 
 law main:

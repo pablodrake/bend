@@ -2,6 +2,14 @@
 # the sequential cursor unchanged when reading at an offset or asking size.
 import Base
 
+law path:
+  IO(String)
+
+def path():
+  do IO<String>:
+    dir : String <- IO.temp_dir()
+    IO.pure(String, dir ++ "/bend_io_file_binary")
+
 law bytes:
   for n: Nat
   for +at: U32
@@ -110,7 +118,8 @@ law write_invalid:
 
 def write_invalid():
   do IO<File>:
-    f : File <- IO.try(File, File.open("/tmp/bend_io_file_binary", "w"))
+    p : String <- path()
+    f : File <- IO.try(File, File.open(p, "w"))
     p : File & Result<&1, &1, U32 & String, List<&2, U32>> <-
       File.read_at(f, 0, 1)
     f : File <- bad_read(p)
@@ -145,7 +154,8 @@ law append:
 
 def append():
   do IO<Unit>:
-    f : File <- IO.try(File, File.open("/tmp/bend_io_file_binary", "a"))
+    p : String <- path()
+    f : File <- IO.try(File, File.open(p, "a"))
     p : File & Result<&1, &1, U32 & String, Unit> <-
       File.write_bytes(f, [0, 255])
     f : File <- wrote(p)
@@ -156,7 +166,8 @@ law open_read:
 
 def open_read():
   do IO<File>:
-    f : File <- IO.try(File, File.open("/tmp/bend_io_file_binary", "r"))
+    p : String <- path()
+    f : File <- IO.try(File, File.open(p, "r"))
     p : File & Result<&1, &1, U32 & String, Unit> <- File.write_bytes(f, [1])
     f : File <- bad_write(p, 9, "write on read-only handle")
     p : File & Result<&1, &1, U32 & String, U32> <- File.size(f)
