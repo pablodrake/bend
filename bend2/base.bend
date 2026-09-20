@@ -175,6 +175,10 @@ def IO.args() -> IO(List<String>):
   import "./effs/args.c"
   import "./effs/args.js"
 
+def IO.temp_dir() -> IO(String):
+  import "./effs/temp_dir.c"
+  import "./effs/temp_dir.js"
+
 def IO.die(-A: Type, code: U32, msg: String) -> IO(A):
   R => k => Halt{code, msg}
 
