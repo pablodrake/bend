@@ -20,7 +20,7 @@ import * as lib from "./_lib";
 // Types
 // =====
 
-type Test = {
+export type Test = {
   name: string;
   src: string;
   want: string;
@@ -28,24 +28,25 @@ type Test = {
   lanes: string[];
 };
 
-type Got = Record<string, string>;
+export type Got = Record<string, string>;
 
-type Fail = { name: string; probe: string; want: string; got: string };
+export type Fail = { name: string; probe: string; want: string; got: string };
 
 // Constants
 // =========
 
 const TESTS = path.join(lib.ROOT, "tests");
 
-const MARK = "@@B4";
+export const MARK = "@@B4";
 
 const BUN = lib.BUN;
 
 // Test
 // ====
 
-function test_read(dir: string, file: string): Test {
-  const src = fs.readFileSync(path.join(TESTS, dir, file), "utf8");
+export function test_read(dir: string, file: string,
+  source = path.join(TESTS, dir, file)): Test {
+  const src = fs.readFileSync(source, "utf8");
   const want = src.split("\n").filter((l) => l.startsWith("#|"))
     .map((l) => l.slice(2)).join("\n");
   const effs = [...src.matchAll(/^\s*import "\.\/[a-z0-9_]+\.(c|js)"$/gm)]
@@ -58,15 +59,15 @@ function test_read(dir: string, file: string): Test {
     want: tidy(want), main: /^(def|law) main(\(|:)/m.test(src), lanes };
 }
 
-function tidy(text: string): string {
+export function tidy(text: string): string {
   return text.replace(/[ \t]+$/gm, "").trim();
 }
 
-function test_path(t: Test): string {
+export function test_path(t: Test): string {
   return t.name.replace("_", "/") + ".bend";
 }
 
-function test_runs(shard: Test[]): Test[] {
+export function test_runs(shard: Test[]): Test[] {
   return shard.filter((t) => t.main && t.lanes.length > 0
     && !t.want.startsWith("Error:"));
 }
@@ -79,7 +80,7 @@ function test_probes(t: Test, got: Got): string[] {
   return ["check", "interp", ...shown ? t.lanes : []];
 }
 
-function test_judge(t: Test, got: Got): Fail[] {
+export function test_judge(t: Test, got: Got): Fail[] {
   const fails: Fail[] = [];
   for (const probe of test_probes(t, got)) {
     const seen = got[probe === "interp" ? "check" : probe] ?? got.left
@@ -96,7 +97,7 @@ function test_judge(t: Test, got: Got): Fail[] {
 // Shard
 // =====
 
-function shard_split(tests: Test[], count: number): Test[][] {
+export function shard_split(tests: Test[], count: number): Test[][] {
   const shards: Test[][] = Array.from({ length: count }, () => []);
   const sizes = shards.map(() => 0);
   for (const t of [...tests].sort((a, b) => b.src.length - a.src.length)) {
@@ -137,7 +138,7 @@ function shard_script(shard: Test[], tag: number): string {
     + ` cd; rm -rf $d`;
 }
 
-function shard_parse(shard: Test[], out: string): Map<string, Got> {
+export function shard_parse(shard: Test[], out: string): Map<string, Got> {
   const gots = new Map<string, Got>(shard.map((t) => [t.name, {}]));
   const parts = out.split(new RegExp("^" + MARK + " ", "m")).slice(1);
   let last: [Got, string] | null = null;
