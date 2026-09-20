@@ -1075,9 +1075,9 @@ export async function book_load(book: Book, file: string, ns: string, seen: Map<
     return book.order.length;
   }
   seen.set(real, null);
-  const dir   = file.slice(0, file.lastIndexOf("/") + 1);
+  const dir   = path.dirname(file) + path.sep;
   const al    : Record<Name, Name> = Object.create(null);
-  const text  = fs.readFileSync(file, "utf8");
+  const text  = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -1102,7 +1102,7 @@ export async function book_load(book: Book, file: string, ns: string, seen: Map<
         }
         let at  = dir + rel;
         let sub = path.posix.join(path.posix.dirname(ns), rel);
-        if (rel.startsWith("/")) {
+        if (path.isAbsolute(rel)) {
           at  = rel;
           sub = rel;
         }
